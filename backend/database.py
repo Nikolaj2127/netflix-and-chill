@@ -1,28 +1,46 @@
-from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
+import sqlite3
 
-app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+# Database connection
+DATABASE = 'users.db'
 
-db = SQLAlchemy(app)
+def get_db_connection():
+    conn = sqlite3.connect(DATABASE)
+    conn.row_factory = sqlite3.Row
+    return conn
 
-class User(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.String(80), unique=True, nullable=False)
-    embedding = db.Column(db.PickleType, nullable=False)
+# Initialize the database schema
+def init_app():
+    conn = get_db_connection()
+    cursor = conn.cursor()
 
-class UserGroups(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    group_id = db.Column(db.String(80), unique=True, nullable=False)
-    user_ids = db.Column(db.PickleType, nullable=False)  # Store user IDs as a list of strings
+    # Create User table
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS User (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT UNIQUE NOT NULL,
+            embedding BLOB NOT NULL
+        )
+    ''')
 
-class Film(db.Model):
-    film_id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(200), nullable=False)
-    desc = db.Column(db.Text)
-    genre = db.Column(db.String(100))
-    poster_url = db.Column(db.String(200))
+    # Create UserGroups table
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS UserGroups (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            group_id TEXT UNIQUE NOT NULL,
+            user_ids TEXT NOT NULL
+        )
+    ''')
 
-def create_tables():
-    db.create_all()
+    # Create Film table
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS Film (
+            film_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            desc TEXT,
+            genre TEXT,
+            poster_url TEXT
+        )
+    ''')
+
+    conn.commit()
+    conn.close()
