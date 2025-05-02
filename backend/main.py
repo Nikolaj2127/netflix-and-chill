@@ -20,12 +20,21 @@ def postSwipe():
     if not user_id:
         return jsonify({"error": "user_id is required"}), 400
 
+    film_id = swipe.film_id
+    film_rating = swipe.rating
+
     conn = get_db_connection()
     cursor = conn.cursor()
 
     # Check if user exists
     cursor.execute("SELECT * FROM User WHERE user_id = ?", (user_id,))
     user = cursor.fetchone()
+
+    embedding = {}
+    cursor.execute("SELECT embedding FROM User WHERE user_id = ?", (user_id,))
+    user = cursor.fetchone()
+    if user:
+        embedding = user['embedding']
 
     if not user:
         # Insert new user
@@ -34,6 +43,16 @@ def postSwipe():
 
     conn.close()
     return jsonify({"message": "Swipes processed successfully"})
+
+@app.route("/getSwipes")
+def getSwipes():
+    user_id = request.args.get('user_id')
+
+    films =[]
+
+    return jsonify({
+        "films": films
+    })
 
 @app.route("/getRecommendations", methods=['POST'])
 def getRecommendations():
