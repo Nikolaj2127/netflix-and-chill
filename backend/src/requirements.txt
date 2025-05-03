@@ -1,0 +1,4 @@
+Flask
+qdrant_client
+numpy
+Werkzeug==2.2.2
