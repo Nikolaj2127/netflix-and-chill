@@ -55,7 +55,7 @@ class EmbeddingInterface:
         
         return np.array(self.user_embeds[user_id])
 
-    def calculate_new_embedding(self, user_id, movie, liked):
+    def calculate_new_embedding(self, user_id, movie, rating):
         """
             Calculates the new embedding based off of the current embedding and the movie.
         """
@@ -67,7 +67,12 @@ class EmbeddingInterface:
             return
         else:
             # Change the embedding based on liked or not.
-            m_embed = m_embed if liked else -.3 * m_embed 
+            if rating == "superlike":
+                m_embed = m_embed * 2
+            elif rating == "like":
+                m_embed = m_embed
+            elif rating == "dislike":
+                m_embed = -.3 * m_embed 
             if u_embed: 
                 self.user_embeds[user_id] = u_embed + m_embed
             else:

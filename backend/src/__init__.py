@@ -20,7 +20,7 @@ def create_app_instance():
     @cross_origin()
     def question():
 
-        user_id = request.args.get('userId')
+        user_id = request.args.get('user_id')
 
         movies_swiped = db_interface.get_user_movie_ids(user_id)
         
@@ -49,33 +49,35 @@ def create_app_instance():
         user_id = request.args.get('user_id')
 
         try:
-            print(request.data.get('rating'))
-            print(request.data.get('film_id'))
 
-            rating = int(request.values.get('liked'))
-            movie_id = int(request.form.get('movie_id'))
+            data = request.get_json()
+
+            rating = data["rating"]
+            movie_id = data["movie_id"]
+
         except Exception as e:
             return (jsonify({"message:" "Could not parse POST body (rating or film_id)"}), 401)
 
         if not db_interface.movie_exists(movie_id):
             return (jsonify({"message:" "Movie not found."}), 404)
         
-        if "swiped" not in session:
+        
+        movies_swiped = db_interface.get_user_movie_ids(user_id)
+
+        if len(movies_swiped) == 0:
             return ("Start off by sending a question request.", 503)
         
-        if len(session["swiped"]) < ROUND_COUNT:
-            if liked != 0: # skip when liked = 0
-                embedding_interface.calculate_new_embedding(user_id, movie_id, liked)
-                # TODO:
-                # session["embedding"] = list(embedding_interface.calculate_new_embedding(session["embedding"], movie_id, liked))  
+        if len(movies_swiped) < ROUND_COUNT:
+            if rating != "skip": # skip when liked = 0
+                embedding_interface.calculate_new_embedding(user_id, movie_id, rating)
 
-            return jsonify({"message": "success", "swiped left" : ROUND_COUNT - len(session["swiped"]) }), 200
+            return jsonify({"message": "success", "swiped left" : ROUND_COUNT - len(movies_swiped) }), 200
 
         else: 
             return jsonify({"error": "Too many answers"}), 503
         
 
-    @app.route("/getRecommendations", methods=['POST'])
+    @app.route("/getRecommendations", methods=['GET'])
     @cross_origin()
     def getRecommendations():
         group_id = request.args.get('group_id')
