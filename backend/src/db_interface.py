@@ -54,12 +54,12 @@ class NaC_DB_Interface(DB_interface):
             ''')
 
             # Create Groups table
+
+            # For now this is a table, we might want to know additional data about the group.
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS Groups (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    group_id TEXT UNIQUE NOT NULL
-                )
-            ''')
+                    group_id INTEGER PRIMARY KEY AUTOINCREMENT
+                )''')
 
             # Create UserGroups association table
             cursor.execute('''
@@ -113,8 +113,9 @@ class NaC_DB_Interface(DB_interface):
         try:
             with self.get_db_connection() as conn:
                 cursor = conn.cursor()
-                cursor.execute('SELECT 1 FROM Group WHERE group_id = ?', (group_id,))
+                cursor.execute('SELECT 1 FROM Groups WHERE group_id = ?', (group_id,))
                 return cursor.fetchone() is not None
+            
         except sqlite3.Error as e:
             print(f"Database error: {e}")
             return False
@@ -140,7 +141,7 @@ class NaC_DB_Interface(DB_interface):
         try:
             with self.get_db_connection() as conn:
                 cursor = conn.cursor()
-                cursor.execute('INSERT INTO Groups DEFAULT VALUES')
+                cursor.execute('INSERT INTO Groups DEFAULT VALUES;')
                 conn.commit()
                 return cursor.lastrowid
         except sqlite3.Error as e:

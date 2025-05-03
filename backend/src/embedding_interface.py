@@ -9,7 +9,7 @@ class EmbeddingInterface:
         self.EMBEDDING_DIMENSIONS = 3072
 
         # Maps user_id to vector - not the prettiest, but it should work.
-        self.user_embeds = map()
+        self.user_embeds = dict()
 
 
     def get_next_question_movie(self, past_swipes):
@@ -79,9 +79,9 @@ class EmbeddingInterface:
         """
         self.user_embeds[user_id] = np.zeros(self.EMBEDDING_DIMENSIONS)
 
-    def calculate_users_shared_movies(self, user_ids):
+    def calculate_users_shared_movies(self, user_ids, count = 10):
         """
-        This is the whole point of the program. We take the user_ids, query the embedded databases and return the shared interested movies.
+        This is the whole point of the program. We take the user_ids, query the embedded databases and return first `count` shared interested movies.
 
         TODO: with team.
         """
