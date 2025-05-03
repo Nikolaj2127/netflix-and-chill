@@ -39,32 +39,33 @@ def create_app_instance():
     @app.route("/postSwipe", methods=['POST'])
     def process_answer():
 
-        try:
-            movie_id = int(request.args.get('movie'))
-        except Exception as e:
-            return (jsonify({"message": "Could not parse movie_id"}), 403)
+        if "user_id" not in request.args:
+            return (jsonify({"message": "user_id not defined"}), 403)
+        
+        user_id = request.args.get('movie')
 
         if not db_interface.movie_exists(movie_id):
             return (jsonify({"message:" "Movie not found."}), 404)
         
         try:
-            liked = int(request.args.get('liked'))
+            liked = int(request.form.get('liked'))
+            movie_id = int(request.form.get('movie_id'))
         except Exception as e:
-            return (jsonify({"message:" "Could not parse liked as int."}), 401)
+            return (jsonify({"message:" "Could not parse POST body (liked or movie_id)"}), 401)
 
         if "swiped" not in session:
             return ("Start off by sending a question request.", 503)
         
         if len(session["swiped"]) < ROUND_COUNT:
             if liked != 0: # skip when liked = 0
-                pass
+                embedding_interface.calculate_new_embedding(user_id, movie_id, liked)
                 # TODO:
                 # session["embedding"] = list(embedding_interface.calculate_new_embedding(session["embedding"], movie_id, liked))  
 
-            return (jsonify({"message": "success", "swiped left" : ROUND_COUNT - len(session["swiped"]) }), 200)
+            return jsonify({"message": "success", "swiped left" : ROUND_COUNT - len(session["swiped"]) }), 200
 
         else: 
-            return ("Too many answers", 503)
+            return jsonify({"error": "Too many answers"}), 503
         
 
     @app.route("/getRecommendations", methods=['POST'])
@@ -111,9 +112,29 @@ def create_app_instance():
         group_id = db_interface.create_group()
 
         if group_id == -1:
-            return jsonify({"message": "Error"}), 500
+            return jsonify({"error": "Group could not be created."}), 500
         
-        return jsonify({"message": "Group created successfully", "group_id": group_id, "user_id": user_id})
+        return jsonify({"group_id": group_id})
     
+    @app.route("/getMovieInfo", methods=['GET'])
+    def getMovieInfo():
+
+        if "movie_id" not in request.args:
+            return (jsonify({"error" : "movie_id not defined"}), 400)
+
+        try: 
+            movie_id = int(request.args.get('movie_id'))
+        except Exception as e:
+            return (jsonify({"error" : "movie_id could not be parsed."}), 400)
+
+        if not db_interface.movie_exists(movie_id):
+            return (jsonify({"error" : "movie_id doesn't exist."}), 400)
+        
+        try:
+            movie_info = db_interface.get_movie_info(movie_id)
+            return jsonify(movie_info), 200
+        
+        except Exception as e:
+            return (jsonify({"error" : e}), 400)
 
     return app

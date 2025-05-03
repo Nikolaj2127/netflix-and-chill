@@ -1,13 +1,15 @@
 from qdrant_client import QdrantClient
 from qdrant_client.http import models
 import random
+import numpy as np
 
 class EmbeddingInterface:
     def __init__(self):
         self.client = QdrantClient(url="http://tobias-home.hindahl.de:6333/", api_key="check24")
         self.EMBEDDING_DIMENSIONS = 3072
 
-        self.user_embeds = None # TODO.
+        # Maps user_id to vector - not the prettiest, but it should work.
+        self.user_embeds = map()
 
 
     def get_next_question_movie(self, past_swipes):
@@ -44,23 +46,32 @@ class EmbeddingInterface:
         """
         pass
     
+    def user_exists(self, user_id):
+        return user_id in self.user_embeds.keys()
+        
+    def fetch_embedding_from_user(self, user_id):
+        if not self.user_exists(user_id):
+            raise RuntimeError("User doesn't exist.")
+        
+        return np.array(self.user_embeds[user_id])
 
-    def calculate_new_embedding(self, embedding, movie, liked):
+    def calculate_new_embedding(self, user_id, movie, liked):
         """
             Calculates the new embedding based off of the current embedding and the movie.
         """
 
         m_embed = self.fetch_embedding_from_movie(movie)
+        u_embed =  self.fetch_embedding_from_user(user_id)
 
         if m_embed is None:
-            return embedding
+            return
         else:
             # Change the embedding based on liked or not.
             m_embed = m_embed if liked else -.3 * m_embed 
-            if embedding: 
-                return embedding + m_embed
+            if u_embed: 
+                self.user_embeds[user_id] = u_embed + m_embed
             else:
-                return m_embed
+                self.user_embeds[user_id] = m_embed
 
     def add_user_to_embeds(self, user_id):
         """

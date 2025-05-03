@@ -22,6 +22,11 @@ class DB_interface(ABC):
     def get_users_in_group(self, group_id: str) -> list:
         pass
 
+    @abstractmethod
+    def get_movie_info(self, movie_id: int) -> list:
+        pass
+
+
 class NaC_DB_Interface(DB_interface):
 
     def __init__(self):
@@ -67,13 +72,12 @@ class NaC_DB_Interface(DB_interface):
                 )
             ''')
 
-            # Create Film table
+            # Create Movie table
             cursor.execute('''
-                CREATE TABLE IF NOT EXISTS Film (
-                    film_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                CREATE TABLE IF NOT EXISTS Movie (
+                    movie_id INTEGER PRIMARY KEY AUTOINCREMENT,
                     name TEXT NOT NULL,
-                    desc TEXT,
-                    genre TEXT,
+                    short_desc TEXT,
                     poster_url TEXT
                 )
             ''')
@@ -96,7 +100,7 @@ class NaC_DB_Interface(DB_interface):
         try:
             with self.get_db_connection() as conn:
                 cursor = conn.cursor()
-                cursor.execute('SELECT 1 FROM Film WHERE film_id = ?', (movie_id,))
+                cursor.execute('SELECT 1 FROM Movie WHERE movie_id = ?', (movie_id,))
                 return cursor.fetchone() is not None
         except sqlite3.Error as e:
             print(f"Database error while checking movie existence: {e}")
@@ -166,3 +170,27 @@ class NaC_DB_Interface(DB_interface):
         except Exception as e:
             print(f"Unexpected error: {e}")
             return []
+        
+    def get_movie_info(self, movie_id: int):
+        try:
+            with self.get_db_connection() as conn:
+                cursor = conn.cursor()
+                query = '''
+                    SELECT name, short_desc, poster_url FROM Movie WHERE id = ?
+                '''
+                cursor.execute(query, (movie_id,))
+                row = cursor.fetchone() 
+
+                if row:
+                    return {
+                        "name": row[0],
+                        "short_desc": row[1],
+                        "poster_url": row[2]
+                    }
+                else:
+                    raise RuntimeError(f"Couldn't read movie from database: query returned {row}.")
+
+        except sqlite3.Error as e:
+            raise RuntimeError(f"Database error while retrieving movie \'{movie_id}': {e}")
+        except Exception as e:
+            raise e
