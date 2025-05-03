@@ -34,10 +34,10 @@ def create_app_instance():
             for movie in movies:
                 db_interface.add_user_movie_pair(user_id, movie)
 
-            return jsonify({"movies": movies}), 200
+            return jsonify(movies), 200
 
         else:
-            return jsonify({"movies": []}), 200
+            return jsonify([]), 200
         
     @app.route("/postSwipe", methods=['POST'])
     @cross_origin()
