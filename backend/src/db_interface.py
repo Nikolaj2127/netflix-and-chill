@@ -1,5 +1,7 @@
 import sqlite3
 from abc import ABC, abstractmethod
+from qdrant_client import QdrantClient
+from qdrant_client.http import models
 
 class DB_interface(ABC):
     @abstractmethod
@@ -32,7 +34,7 @@ class NaC_DB_Interface(DB_interface):
     def __init__(self):
         # Database connection
         self.DATABASE = 'users.db'
-        
+        self.client = QdrantClient(url="http://tobias-home.hindahl.de:6333/", api_key="check24")
         self.init_db()
 
     def get_db_connection(self):
@@ -72,14 +74,13 @@ class NaC_DB_Interface(DB_interface):
                 )
             ''')
 
-            # Create Movie table
             cursor.execute('''
-                CREATE TABLE IF NOT EXISTS Movie (
-                    movie_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    name TEXT NOT NULL,
-                    short_desc TEXT,
-                    poster_url TEXT
-                )
+                CREATE TABLE IF NOT EXISTS UsersMovies (
+                user_id INTEGER NOT NULL,
+                movie_id INTEGER NOT NULL,
+                PRIMARY KEY (user_id, movie_id),
+                FOREIGN KEY (user_id) REFERENCES User(id) ON DELETE CASCADE,
+)
             ''')
 
     def user_exists(self, uuid):
@@ -95,19 +96,10 @@ class NaC_DB_Interface(DB_interface):
         except Exception as e:
             print(f"Unexpected error: {e}")
             return False
-        
+
     def movie_exists(self, movie_id):
-        try:
-            with self.get_db_connection() as conn:
-                cursor = conn.cursor()
-                cursor.execute('SELECT 1 FROM Movie WHERE movie_id = ?', (movie_id,))
-                return cursor.fetchone() is not None
-        except sqlite3.Error as e:
-            print(f"Database error while checking movie existence: {e}")
-            return False
-        except Exception as e:
-            print(f"Unexpected error: {e}")
-            return False
+        result = self.get_movie_info(movie_id)
+        return result is not None
         
     def group_exists(self, group_id):
         try:
@@ -119,6 +111,24 @@ class NaC_DB_Interface(DB_interface):
         except sqlite3.Error as e:
             print(f"Database error: {e}")
             return False
+
+    def add_user_movie_pair(self, user_id, movie_ids):
+        try:
+            with self.get_db_connection() as conn:
+                cursor = conn.cursor()
+
+                # Insert association into UserGroups
+                for movie_id in movie_ids:
+                    cursor.execute(
+                        "INSERT OR IGNORE INTO UsersMovies (user_id, movie_id) VALUES (?, ?)",
+                        (user_id, movie_id)
+                    )
+
+        except sqlite3.Error as e:
+            raise RuntimeError(f"Database error while adding user to group: {e}")
+
+        except Exception as e:
+            raise RuntimeError(f"Unexpected error: {e}")
 
     def add_user_to_group(self, user_id: str, group_id: str) -> bool:
         try:
@@ -174,24 +184,16 @@ class NaC_DB_Interface(DB_interface):
         
     def get_movie_info(self, movie_id: int):
         try:
-            with self.get_db_connection() as conn:
-                cursor = conn.cursor()
-                query = '''
-                    SELECT name, short_desc, poster_url FROM Movie WHERE id = ?
-                '''
-                cursor.execute(query, (movie_id,))
-                row = cursor.fetchone() 
+            result = self.client.retrieve(
+                collection_name="movies_top1000_1024",
+                ids=[movie_id],
+            )
 
-                if row:
-                    return {
-                        "name": row[0],
-                        "short_desc": row[1],
-                        "poster_url": row[2]
+            return {
+                        "name": result[0].payload["title"],
+                        "short_desc": result[0].payload["short_plot"],
+                        "poster_url": result[0].payload["image_url"]
                     }
-                else:
-                    raise RuntimeError(f"Couldn't read movie from database: query returned {row}.")
 
-        except sqlite3.Error as e:
-            raise RuntimeError(f"Database error while retrieving movie \'{movie_id}': {e}")
         except Exception as e:
             raise e

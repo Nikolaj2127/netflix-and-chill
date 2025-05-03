@@ -34,6 +34,7 @@ def create_app_instance():
             return jsonify({"movies": movies}), 200
 
         else:
+            db_interface.add_user_movie_pair(user_id, movie_ids=session["swiped"])
             return jsonify({"movies": []}), 200
         
     @app.route("/postSwipe", methods=['POST'])
