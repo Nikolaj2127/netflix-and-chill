@@ -76,11 +76,11 @@ class NaC_DB_Interface(DB_interface):
 
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS UsersMovies (
-                user_id INTEGER NOT NULL,
-                movie_id INTEGER NOT NULL,
-                PRIMARY KEY (user_id, movie_id),
-                FOREIGN KEY (user_id) REFERENCES User(id) ON DELETE CASCADE,
-)
+                    user_id INTEGER NOT NULL,
+                    movie_id INTEGER NOT NULL,
+                    PRIMARY KEY (user_id, movie_id),
+                    FOREIGN KEY (user_id) REFERENCES User(id) ON DELETE CASCADE
+                )
             ''')
 
     def user_exists(self, uuid):
