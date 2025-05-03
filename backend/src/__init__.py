@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify, session
 from src.db_interface import NaC_DB_Interface
 from src.embedding_interface import EmbeddingInterface
+from flask_cors import CORS, cross_origin
 
 def create_app_instance():
     app = Flask(__name__)
@@ -16,7 +17,8 @@ def create_app_instance():
 
     # THIS SHOULD BE THE MAIN ENTRY POINT.
     @app.route("/getSwipes", methods=['GET'])
-    def question():    
+    @cross_origin()
+    def question():
 
         user_id = request.args.get('userId')
 
@@ -38,6 +40,7 @@ def create_app_instance():
             return jsonify({"movies": []}), 200
         
     @app.route("/postSwipe", methods=['POST'])
+    @cross_origin()
     def process_answer():
 
         if "user_id" not in request.args:
@@ -73,6 +76,7 @@ def create_app_instance():
         
 
     @app.route("/getRecommendations", methods=['POST'])
+    @cross_origin()
     def getRecommendations():
         group_id = request.args.get('group_id')
 
@@ -88,10 +92,12 @@ def create_app_instance():
         return jsonify({"movies": movies})
 
     @app.route("/health")
+    @cross_origin()
     def health():
         return jsonify({"message" : "I am ALIVE"}), 200
 
     @app.route("/joinGroup", methods=['GET'])
+    @cross_origin()
     def joinGroup():# -> tuple[Any, Literal[400]] | tuple[Any, Literal[404]] | tuple...:
         group_id = request.args.get('group_id')
         user_id = request.args.get('user_id')
@@ -110,6 +116,7 @@ def create_app_instance():
 
 
     @app.route("/createGroup", methods=['POST'])
+    @cross_origin()
     def createGroup():
 
         user_id = request.args.get('user_id')
@@ -125,6 +132,7 @@ def create_app_instance():
         return (jsonify(group_id), 200)
     
     @app.route("/getMovieInfo", methods=['GET'])
+    @cross_origin()
     def getMovieInfo():
 
         if "movie_id" not in request.args:
