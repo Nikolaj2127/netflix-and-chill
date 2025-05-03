@@ -20,21 +20,20 @@ def create_app_instance():
 
         user_id = request.args.get('userId')
 
-        if "swiped" not in session:
-            session["swiped"] = []
-
         if len(session["swiped"]) < ROUND_COUNT:
 
             if not embedding_interface.user_embed_exists(user_id):
                 embedding_interface.add_user_to_embeds(user_id)
 
-            movies = embedding_interface.get_next_question_movie(session["swiped"])
-            session["swiped"] += movies
+            movies_swiped = db_interface.get_user_movie_ids(user_id)
+            movies = embedding_interface.get_next_question_movie(movies_swiped)
+
+            for movie in movies:
+                db_interface.add_user_movie_pair(user_id, movie)
 
             return jsonify({"movies": movies}), 200
 
         else:
-            db_interface.add_user_movie_pair(user_id, movie_ids=session["swiped"])
             return jsonify({"movies": []}), 200
         
     @app.route("/postSwipe", methods=['POST'])
