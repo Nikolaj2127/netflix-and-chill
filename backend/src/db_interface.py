@@ -112,17 +112,34 @@ class NaC_DB_Interface(DB_interface):
             print(f"Database error: {e}")
             return False
 
-    def add_user_movie_pair(self, user_id, movie_ids):
+    def get_user_movie_ids(self, user_id):
         try:
             with self.get_db_connection() as conn:
                 cursor = conn.cursor()
 
-                # Insert association into UserGroups
-                for movie_id in movie_ids:
-                    cursor.execute(
-                        "INSERT OR IGNORE INTO UsersMovies (user_id, movie_id) VALUES (?, ?)",
-                        (user_id, movie_id)
-                    )
+                cursor.execute(
+                    "SELECT movie_id FROM UsersMovies WHERE user_id = ?",
+                    (user_id,)
+                )
+
+                rows = cursor.fetchall()
+                return [row[0] for row in rows]  # Extract movie_ids from the rows
+
+        except sqlite3.Error as e:
+            raise RuntimeError(f"Database error while fetching user movies: {e}")
+
+        except Exception as e:
+            raise RuntimeError(f"Unexpected error: {e}")
+
+    def add_user_movie_pair(self, user_id, movie_id):
+        try:
+            with self.get_db_connection() as conn:
+                cursor = conn.cursor()
+
+                cursor.execute(
+                    "INSERT OR IGNORE INTO UsersMovies (user_id, movie_id) VALUES (?, ?)",
+                    (user_id, movie_id)
+                )
 
         except sqlite3.Error as e:
             raise RuntimeError(f"Database error while adding user to group: {e}")
