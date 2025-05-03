@@ -46,11 +46,11 @@ class EmbeddingInterface:
         """
         pass
     
-    def user_exists(self, user_id):
+    def user_embed_exists(self, user_id):
         return user_id in self.user_embeds.keys()
         
     def fetch_embedding_from_user(self, user_id):
-        if not self.user_exists(user_id):
+        if not self.user_embed_exists(user_id):
             raise RuntimeError("User doesn't exist.")
         
         return np.array(self.user_embeds[user_id])
@@ -77,17 +77,12 @@ class EmbeddingInterface:
         """
             Adds a user with a uuid to the vectorstore. Inits at Zero-Vector.
         """
-        pass
-
-
-    def user_in_enbeds(self, user_id):
-        """
-            Returns true if user is in the enbedded db.
-        """
-        pass
+        self.user_embeds[user_id] = np.zeros(self.EMBEDDING_DIMENSIONS)
 
     def calculate_users_shared_movies(self, user_ids):
         """
         This is the whole point of the program. We take the user_ids, query the embedded databases and return the shared interested movies.
+
+        TODO: with team.
         """
         pass

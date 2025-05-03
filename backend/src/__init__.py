@@ -25,7 +25,7 @@ def create_app_instance():
 
         if len(session["swiped"]) < ROUND_COUNT:
 
-            if not embedding_interface.user_in_enbeds(user_id):
+            if not embedding_interface.user_embed_exists(user_id):
                 embedding_interface.add_user_to_embeds(user_id)
 
             movies = embedding_interface.get_next_question_movie(session["swiped"])
