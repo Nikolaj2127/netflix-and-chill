@@ -42,17 +42,20 @@ def create_app_instance():
         if "user_id" not in request.args:
             return (jsonify({"message": "user_id not defined"}), 403)
         
-        user_id = request.args.get('movie')
+        user_id = request.args.get('user_id')
+
+        try:
+            print(request.data.get('rating'))
+            print(request.data.get('film_id'))
+
+            rating = int(request.values.get('liked'))
+            movie_id = int(request.form.get('movie_id'))
+        except Exception as e:
+            return (jsonify({"message:" "Could not parse POST body (rating or film_id)"}), 401)
 
         if not db_interface.movie_exists(movie_id):
             return (jsonify({"message:" "Movie not found."}), 404)
         
-        try:
-            liked = int(request.form.get('liked'))
-            movie_id = int(request.form.get('movie_id'))
-        except Exception as e:
-            return (jsonify({"message:" "Could not parse POST body (liked or movie_id)"}), 401)
-
         if "swiped" not in session:
             return ("Start off by sending a question request.", 503)
         
@@ -83,9 +86,12 @@ def create_app_instance():
 
         return jsonify({"movies": movies})
 
+    @app.route("/health")
+    def health():
+        return jsonify({"message" : "I am ALIVE"}), 200
 
-    @app.route("/joinGroup", methods=['POST'])
-    def joinGroup():
+    @app.route("/joinGroup", methods=['GET'])
+    def joinGroup():# -> tuple[Any, Literal[400]] | tuple[Any, Literal[404]] | tuple...:
         group_id = request.args.get('group_id')
         user_id = request.args.get('user_id')
 
@@ -104,17 +110,18 @@ def create_app_instance():
 
     @app.route("/createGroup", methods=['POST'])
     def createGroup():
-        user_id = request.args.get('user_id')
 
+        user_id = request.args.get('user_id')
         if not user_id:
-            return jsonify({"error": "user_id is required"}), 400
+            return jsonify({"error": "group_id and user_id are required"}), 400
 
         group_id = db_interface.create_group()
 
         if group_id == -1:
             return jsonify({"error": "Group could not be created."}), 500
         
-        return jsonify({"group_id": group_id})
+        db_interface.add_user_to_group(user_id, group_id)
+        return (jsonify(group_id), 200)
     
     @app.route("/getMovieInfo", methods=['GET'])
     def getMovieInfo():
