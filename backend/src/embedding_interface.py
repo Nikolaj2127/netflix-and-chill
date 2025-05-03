@@ -85,4 +85,28 @@ class EmbeddingInterface:
 
         TODO: with team.
         """
-        pass
+        vectors = []
+
+        for user_id in user_ids:
+            embedding = self.fetch_embedding_from_user.get(user_id)
+            if embedding is not None:
+                vectors.append(np.array(embedding))
+            else:
+                print(f"Warning: No embedding found for user_id {user_id}")
+
+        combined_vector = np.mean(np.stack(vectors), axis=0)
+
+        normalized_vector = self.sigmoid(combined_vector)
+
+        results = self.client.client.query_points(
+            collection_name="movies2", # TODO to be changed to "movies_top1000_1024"
+            query=normalized_vector,
+        )
+
+        p = results.points
+
+        re = [i.id for i in p]
+        return re
+
+    def sigmoid(x):
+        return 1 / (1 + np.exp(-x))
